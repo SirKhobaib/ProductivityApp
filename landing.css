@@ -1,0 +1,208 @@
+/* ==========================================================================
+   HabitTrack — landing page ("fog of war" map, radar toy, flame counter)
+   NOTE: the :root tokens mirror css/styles.css and js/store.js PALETTE —
+   keep them in sync with the app, do not invent new brand colors.
+   ========================================================================== */
+
+:root {
+  --green: #58CC02;
+  --green-dark: #3E9A01;
+  --blue: #1CB0F6;
+  --slate: #5B5F6E;
+  --ink: #22242E;
+  --sky: #EAF6FF;
+  --paper: #FAFBFC;
+  --fog: #E4E6EE;
+  --card: #FFFFFF;
+  --accent: #58CC02; /* consumed by U.progressColor() in the radar toy */
+  --radius: 18px;
+  --shadow-card: 0 1px 2px rgba(18, 22, 33, 0.05), 0 4px 14px rgba(18, 22, 33, 0.05);
+  --ease: cubic-bezier(.25, .72, .3, 1);
+  --font-display: 'Baloo 2', 'Vazirmatn', -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+html[lang="fa"] {
+  --font-display: 'Vazirmatn', Tahoma, 'Segoe UI', sans-serif;
+  --font-body: 'Vazirmatn', Tahoma, 'Segoe UI', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { color-scheme: light; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; border: none; background: none; cursor: pointer; color: inherit; touch-action: manipulation; }
+a { color: inherit; text-decoration: none; }
+svg { display: block; }
+
+:focus-visible { outline: 3px solid rgba(28, 176, 246, 0.55); outline-offset: 2px; border-radius: 8px; }
+
+/* ---------- top bar: wordmark + language toggle ---------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1080px; margin: 0 auto; padding: 16px 20px;
+  transition: opacity .22s var(--ease), transform .22s var(--ease);
+}
+.wordmark {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 22px; color: var(--green-dark); letter-spacing: -0.01em;
+}
+.lang-toggle {
+  font-size: 14px; font-weight: 600; color: var(--slate);
+  padding: 8px 14px; min-height: 44px; border-radius: 999px;
+  background: var(--card); box-shadow: var(--shadow-card);
+  display: inline-flex; align-items: center;
+}
+
+/* ---------- hero: the fogged map ---------- */
+.hero {
+  min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; justify-content: center; gap: 26px;
+  background: linear-gradient(180deg, var(--sky) 0%, var(--paper) 82%);
+  padding: 8px 20px 44px;
+  transition: opacity .22s var(--ease), transform .22s var(--ease);
+}
+.world {
+  display: flex; flex-direction: column; align-items: stretch;
+  max-width: 440px; margin: 0 auto; width: 100%;
+}
+.hero-line { text-align: center; font-size: 17px; color: var(--slate); }
+
+/* islands — mirrored from the app's .island / .lock-chip styles */
+.island {
+  position: relative; background: var(--card);
+  border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden;
+}
+.art-wrap { position: relative; overflow: hidden; border-radius: var(--radius) var(--radius) 0 0; }
+.island-art svg { width: 100%; height: auto; }
+.island.locked .island-art { filter: grayscale(0.9) opacity(0.55); transition: filter .9s var(--ease); }
+.lock-chip {
+  position: absolute; top: 10px; inset-inline-end: 10px; z-index: 2;
+  background: #2A2C35; color: #fff; font-size: 13px;
+  padding: 5px 9px; border-radius: 999px;
+  transition: opacity .6s var(--ease);
+}
+.fog {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(228, 230, 238, .42) 0%, rgba(228, 230, 238, .9) 100%);
+  transition: opacity .9s var(--ease), transform .9s var(--ease);
+}
+@supports ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .fog {
+    background: rgba(228, 230, 238, 0.34);
+    backdrop-filter: blur(7px) grayscale(0.55);
+    -webkit-backdrop-filter: blur(7px) grayscale(0.55);
+  }
+}
+.island.revealed .fog { opacity: 0; transform: translateY(-16px); }
+.island.revealed .island-art { filter: none; }
+.island.revealed .lock-chip { opacity: 0; }
+.no-anim, .no-anim * { transition: none !important; animation: none !important; }
+
+.island-meta { display: flex; align-items: center; gap: 10px; padding: 10px 14px 12px; }
+.island-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.island-txt { min-width: 0; }
+.island-name { font-family: var(--font-display); font-size: 17px; font-weight: 700; line-height: 1.2; }
+.island-sub { font-size: 12.5px; color: var(--slate); margin-top: 1px; }
+
+.trail { width: 0; height: 36px; border-inline-start: 3px dashed #C4C8D2; margin: 4px auto; flex: none; }
+
+/* ---------- sections ---------- */
+.sec { max-width: 720px; margin: 0 auto; padding: 72px 20px; transition: opacity .22s var(--ease), transform .22s var(--ease); }
+.sec-line {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 30px; line-height: 1.25; letter-spacing: -0.01em;
+  text-align: center; margin-bottom: 30px;
+}
+main { transition: opacity .22s var(--ease), transform .22s var(--ease); }
+
+/* RTL flip: brief crossfade + lift while direction swaps (skipped for reduced motion) */
+.lang-flip { opacity: 0.15; transform: translateY(10px); }
+
+/* ---------- radar toy ---------- */
+.radar-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.radar-stage { width: 100%; max-width: 460px; display: flex; justify-content: center; }
+#radarCanvas { max-width: 100%; }
+.sliders { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 4px; }
+.slider-row { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+.slider-row label { flex: none; width: 96px; font-size: 14px; font-weight: 600; color: var(--slate); }
+.slider-row output {
+  flex: none; width: 46px; text-align: end;
+  font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.slider-row input[type="range"] { flex: 1; min-height: 44px; accent-color: var(--green); }
+
+/* ---------- flame counter ---------- */
+.sec-flame { text-align: center; }
+.flame-big { color: var(--green); display: flex; justify-content: center; }
+.flame-big svg { width: 92px; height: 92px; }
+.flame-count { margin-top: 6px; }
+.flame-count b {
+  display: inline-block; min-width: 2ch;
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(56px, 14vw, 96px); line-height: 1.05; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.flame-count span { display: block; font-size: 14px; font-weight: 600; color: var(--slate); }
+.flame-cap { margin-top: 14px; font-size: 15px; color: var(--slate); font-variant-numeric: tabular-nums; }
+
+/* ---------- close / CTA ---------- */
+.sec-cta {
+  max-width: none;
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
+  padding: 84px 20px;
+  background: linear-gradient(180deg, var(--paper) 0%, var(--sky) 100%);
+}
+.cta-island { width: min(260px, 70vw); }
+.cta-island .island { border: 2px solid var(--green); animation: glow 2.8s ease-in-out infinite; }
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 204, 2, 0); }
+  50% { box-shadow: 0 0 30px 5px rgba(88, 204, 2, 0.3); }
+}
+/* button mirrors the app's .btn / .btn.primary declarations verbatim */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 13px 18px; border-radius: 14px; font-size: 15px; font-weight: 600;
+}
+.btn.primary { background: var(--green); color: #fff; }
+.btn.primary:active { filter: brightness(0.94); }
+.cta-date { font-size: 13px; color: var(--slate); font-variant-numeric: tabular-nums; }
+
+/* ---------- responsive: desktop chain ---------- */
+@media (min-width: 768px) {
+  .world { flex-direction: row; align-items: center; max-width: 1060px; }
+  .world .island { flex: 1 1 0; min-width: 0; }
+  .world .trail {
+    width: 26px; height: 0; margin: 0 4px;
+    border-inline-start: none; border-top: 3px dashed #C4C8D2;
+  }
+  .world section.island:nth-of-type(2n) { transform: translateY(26px); }
+  .world section.island:nth-of-type(4n+1) { transform: translateY(-6px); }
+  .hero-line { font-size: 18px; }
+  .sec-line { font-size: 40px; }
+  .radar-wrap { flex-direction: row; justify-content: center; gap: 44px; }
+}
+@media (min-width: 1080px) {
+  .world section.island:nth-of-type(2n) { transform: translateY(36px); }
+  .sec-line { font-size: 48px; }
+  .sec { padding: 88px 20px; }
+}
+@media (max-width: 480px) {
+  .topbar { padding: 12px 14px; }
+  .hero { padding: 8px 14px 36px; gap: 20px; }
+  .sec { padding: 56px 16px; }
+  .sec-line { font-size: 26px; }
+  .flame-big svg { width: 76px; height: 76px; }
+}
+
+/* ---------- reduced motion: everything lands instantly ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  html { scroll-behavior: auto; }
+}
+
