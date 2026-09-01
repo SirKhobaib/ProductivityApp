@@ -20,7 +20,7 @@ const Onboard = (() => {
     { icon: '\u{1F957}', en: 'Eat clean', fa: '\u063A\u0630\u0627\u06CC \u0633\u0627\u0644\u0645', cat: 'Body', unit: 'times', target: 1 },
     { icon: '\u{1F3AF}', en: 'Plan tomorrow', fa: '\u0628\u0631\u0646\u0627\u0645\u0647\u200C\u06CC \u0641\u0631\u062F\u0627', cat: 'Work', unit: 'times', target: 1 }
   ];
-  const COLORS = ['#58CC02', '#1CB0F6', '#5B5F6E'];
+  const COLORS = ['#229ED9', '#58CC02', '#5B5F6E'];
   const LEVELS = [
     { id: 'easy', mult: 0.5 },
     { id: 'solid', mult: 1 },
@@ -57,7 +57,7 @@ const Onboard = (() => {
       <h1 class="ob-title">${T('obHiTitle')}</h1>
       <p class="ob-sub">${T('obNameQ')}</p>
       <div class="field ob-field">
-        <input id="obName" type="text" maxlength="40" placeholder="${T('obNamePh')}" value="${U.esc(data.name)}" />
+        <input id="obName" type="text" maxlength="40" placeholder="${T('obNamePh')}" value="${U.esc(data.name || TG.userName())}" />
       </div>
       <p class="ob-hint">${T('obNameHint')}</p>
       ${dots()}
@@ -173,7 +173,6 @@ const Onboard = (() => {
     Store.markOnboarded();
     root.hidden = true;
     App.refresh();
-    Tour.start();
   }
 
   function start() {
@@ -187,7 +186,15 @@ const Onboard = (() => {
       root.querySelector('#obSkip').addEventListener('click', () => {
         Store.markOnboarded();
         root.hidden = true;
-        Tour.start();
+      });
+      // Enter answers the current question (textareas: Enter finishes, Shift+Enter = newline).
+      root.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || e.shiftKey) return;
+        if (e.target.closest('button')) return; // buttons advance natively
+        const body = root.querySelector('.ob-body');
+        const fin = body.querySelector('#obFinishBtn');
+        const nxt = body.querySelector('#obNext');
+        if (fin || nxt) { e.preventDefault(); (fin || nxt).click(); }
       });
     }
     root.querySelector('#obSkip').textContent = T('tourSkip');

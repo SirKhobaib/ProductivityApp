@@ -23,10 +23,14 @@ function check(name, cond) {
   if (!cond) failures++;
 }
 
-/* seed */
+/* seed: the app now starts clean — no sample data */
 Store.load();
-check('seed loads 6 habits', Store.data.habits.length === 6);
-check('seed loads 3 day records', Object.keys(Store.data.days).length === 3);
+check('seed starts clean (no habits)', Store.data.habits.length === 0);
+check('seed starts clean (no days)', Object.keys(Store.data.days).length === 0);
+check('seed marks storage initialized', Store.data.meta.seeded === true);
+Store.loadSample();
+check('loadSample loads 6 habits', Store.data.habits.length === 6);
+check('loadSample loads 3 day records', Object.keys(Store.data.days).length === 3);
 
 /* streaks (default goal 80%) */
 const info = Store.streakInfo();
@@ -203,6 +207,24 @@ Store.data.days[dKey5].tasks.push({ id: 'tOLD9', title: 'Legacy timed', done: fa
 Store.importData(JSON.parse(JSON.stringify(Store.data)));
 const legacy9 = Store.dailyTasks(dKey5).find((x) => x.id === 'tOLD9');
 check('v5: import migrates time fields to empty', !!legacy9 && legacy9.startTime === '' && legacy9.dueTime === '');
+
+/* ---- v6: undo / redo ---- */
+Store.eraseAll();
+const dK6 = U.todayKey();
+Store.addTask('daily', dK6, 'Undo me');
+check('v6: task added', Store.dailyTasks(dK6).length === 1);
+check('v6: undo removes the task', Store.undo() === true && Store.dailyTasks(dK6).length === 0);
+check('v6: redo restores the task', Store.redo() === true && Store.dailyTasks(dK6).length === 1);
+(function () { while (Store.undo()) { /* rewind to the start */ } })();
+check('v6: cannot undo past the start', Store.canUndo() === false && Store.dailyTasks(dK6).length === 0);
+(function () { while (Store.redo()) { /* fast-forward to the latest */ } })();
+check('v6: redo reaches latest state', Store.canRedo() === false && Store.dailyTasks(dK6).length === 1);
+check('v6: habit mutation is undoable too', (function () {
+  Store.addHabit({ name: 'Undo habit', unit: 'times', target: 1 });
+  const had = Store.activeHabits().some((h) => h.name === 'Undo habit');
+  const ok = Store.undo();
+  return had && ok && !Store.activeHabits().some((h) => h.name === 'Undo habit');
+})());
 
 console.log(failures === 0 ? '\nALL TESTS PASSED' : '\n' + failures + ' TEST(S) FAILED');
 process.exit(failures ? 1 : 0);

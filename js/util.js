@@ -83,7 +83,7 @@ const U = (() => {
   }
   const progressColor = (t) => {
     const x = clamp(t, 0, 1);
-    const c = toRgb(cssVar('--accent', '#58CC02'));
+    const c = toRgb(cssVar('--accent', '#229ED9'));
     const a = (0.3 + 0.7 * x).toFixed(2);
     return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
   };

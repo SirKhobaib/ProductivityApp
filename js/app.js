@@ -10,7 +10,7 @@ const App = (() => {
     const theme = Store.getSetting('theme', 'light');
     document.body.dataset.theme = theme;
     if (theme === 'custom') {
-      const fav = Store.getProfile().color || '#58CC02';
+      const fav = Store.getProfile().color || '#229ED9';
       document.body.style.setProperty('--accent', fav);
       document.body.style.setProperty('--accent-dark', fav);
     } else {
@@ -26,21 +26,48 @@ const App = (() => {
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       el.textContent = T(el.getAttribute('data-i18n'));
     });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
+      el.setAttribute('placeholder', T(el.getAttribute('data-i18n-ph')));
+    });
   }
 
   function initialsOf(name) {
     return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
   }
 
+  // Profile bar: the user's name, their title and the app name share the
+  // spotlight, swapping every 15s with a little twist. Tapping twists it too.
+  let rotIdx = 0;
+  let rotTimer = 0;
+
+  function headerNames() {
+    const p = Store.getProfile();
+    return [(p.name || '').trim(), (p.title || '').trim(), T('appName')].filter(Boolean);
+  }
+
+  function twistName() {
+    const el = document.getElementById('profileName');
+    el.classList.remove('twist');
+    void el.offsetWidth; // restart the animation
+    el.classList.add('twist');
+  }
+
   function renderHeader() {
     const p = Store.getProfile();
-    const name = (p.name || '').trim();
-    document.getElementById('profileName').textContent = name || T('defaultName');
+    const names = headerNames();
+    if (rotIdx >= names.length) rotIdx = 0;
+    const shown = names[rotIdx] || T('appName');
+    document.getElementById('profileName').textContent = shown;
     const img = document.getElementById('avatarImg');
     const init = document.getElementById('avatarInitials');
     if (p.image) { img.src = p.image; img.hidden = false; init.hidden = true; }
-    else { img.hidden = true; img.removeAttribute('src'); init.textContent = initialsOf(name) || '?'; init.hidden = false; }
+    else { img.hidden = true; img.removeAttribute('src'); init.textContent = initialsOf(p.name || shown) || '?'; init.hidden = false; }
     document.getElementById('avatarBox').style.boxShadow = '0 0 0 2px ' + (p.color || 'var(--accent)');
+  }
+
+  function startNameRotation() {
+    clearInterval(rotTimer);
+    rotTimer = setInterval(() => { rotIdx++; renderHeader(); twistName(); }, 15000);
   }
 
   const viewKey = () => state.viewKey;
@@ -57,7 +84,8 @@ const App = (() => {
     document.body.dataset.tab = t;
     document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + t));
     document.querySelectorAll('.tabbar .tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
-    if (t === 'reports') Reports.render();
+    TG.backButton(t !== 'home');
+    if (t === 'reports') { Reports.render(); renderRadar(); }
     else if (t === 'streak') Streaks.render();
     else if (t === 'map') WorldMap.render();
     else if (t === 'settings') SettingsPage.render();
@@ -131,9 +159,9 @@ const App = (() => {
     else openFabMenu();
   }
 
-  /* ---------- radar ---------- */
+  /* ---------- radar (lives on the Reports tab now) ---------- */
   function renderRadar() {
-    if (state.tab !== 'home') return;
+    if (state.tab !== 'reports') return;
     const axes = Store.radarAxes(state.viewKey);
     Radar.render(document.getElementById('radarCanvas'), axes);
     const cats = new Set(Store.activeHabits().map((h) => h.category).filter(Boolean));
@@ -153,8 +181,8 @@ const App = (() => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.hidden = false;
 
-    const accent = U.cssVar('--accent', '#58CC02');
-    const accent2 = U.cssVar('--accent2', '#1CB0F6');
+    const accent = U.cssVar('--accent', '#229ED9');
+    const accent2 = U.cssVar('--accent2', '#58CC02');
     const colors = [accent, accent2, accent];
     const parts = Array.from({ length: 90 }, () => ({
       x: W / 2 + (Math.random() - 0.5) * 140,
@@ -198,7 +226,6 @@ const App = (() => {
     renderProgress();
     Habits.render();
     Tasks.render();
-    renderRadar();
     // Celebrate the first time today reaches 100% (never on past/future views).
     if (isToday()) {
       const s = Store.dayStats(state.viewKey);
@@ -217,6 +244,9 @@ const App = (() => {
   /* ---------- boot ---------- */
   function init() {
     Store.load();
+    TG.init();
+    // Inside Telegram, follow Telegram's own light/dark scheme.
+    if (TG.colorScheme() === 'dark') Store.setSetting('theme', 'dark');
 
     // Boot overrides (also used for testing): ?lang=fa&theme=dark&calendar=afghan&tour=1
     const qs = new URLSearchParams(location.search);
@@ -226,6 +256,20 @@ const App = (() => {
     if (qs.get('tour') === '1') Store.data.meta.tourDone = false;
     if (qs.get('ob') === '1') Store.data.meta.onboarded = false;
     if (qs.get('ob') === 'skip' || qs.get('tour') === 'skip') Store.markOnboarded();
+
+    // First run: new visitors go through the landing page first, which remembers
+    // the language they picked. Dev params (?lang= / ?ob=) bypass the redirect.
+    if (!Store.data.meta.onboarded) {
+      let landingLang = null;
+      try { landingLang = localStorage.getItem('habittrack.landingLang'); } catch (e) { /* file:// */ }
+      if (landingLang === 'fa' || landingLang === 'en') {
+        Store.setSetting('lang', landingLang);
+        try { localStorage.removeItem('habittrack.landingLang'); } catch (e) { /* ignore */ }
+      } else if (!qs.get('lang') && !qs.get('ob')) {
+        location.replace('landing.html');
+        return;
+      }
+    }
 
     applyLang();
     applyTheme();
@@ -246,10 +290,8 @@ const App = (() => {
       state.progOpen = !state.progOpen;
       renderProgress();
     });
-    document.getElementById('fab').addEventListener('click', toggleFabMenu);
-    document.getElementById('fabScrim').addEventListener('click', closeFabMenu);
-    document.getElementById('fabNewHabit').addEventListener('click', () => { closeFabMenu(); Sheets.openHabitForm(null); });
-    document.getElementById('fabNewTask').addEventListener('click', () => { closeFabMenu(); Sheets.openTaskSheet(); });
+    // The FAB is tasks-only now: it opens the new-task sheet directly.
+    document.getElementById('fab').addEventListener('click', () => Sheets.openTaskSheet());
     document.getElementById('motherTabs').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-mtab]');
       if (b) setMotherTab(b.dataset.mtab);
@@ -260,9 +302,33 @@ const App = (() => {
       if (b) setTab(b.dataset.tab);
     });
 
+    // Undo / redo: Ctrl+Z, Ctrl+Shift+Z (and Ctrl+Y). Text fields keep native undo.
+    document.addEventListener('keydown', (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k !== 'z' && k !== 'y') return;
+      if (k === 'y' && e.shiftKey) return;
+      if (e.target && e.target.closest && e.target.closest('input, textarea, select')) return;
+      e.preventDefault();
+      const isRedo = e.shiftKey || k === 'y';
+      const changed = isRedo ? Store.redo() : Store.undo();
+      if (changed) { App.refresh(); U.toast(T(isRedo ? 'redone' : 'undone')); }
+    });
+
+    // Telegram Mini App: the native back button returns Home.
+    TG.onBackClick(() => setTab('home'));
+
+    // The + FAB only serves tasks; habits get a button at the end of their list.
+    document.getElementById('habitAddBtn').addEventListener('click', () => Sheets.openHabitForm(null));
+
     // Settings is reached from the gear icon in the date bar (not a tab).
     document.getElementById('settingsBtn').addEventListener('click', () => setTab('settings'));
-    document.getElementById('profileBtn').addEventListener('click', () => { setTab('settings'); SettingsPage.open('profile'); });
+    document.getElementById('profileBtn').addEventListener('click', () => {
+      twistName();
+      setTab('settings');
+      SettingsPage.open('profile');
+    });
 
     // Day rollover: if the app stays open past midnight, snap forward.
     const checkMidnight = () => {
@@ -275,10 +341,10 @@ const App = (() => {
     };
     setInterval(checkMidnight, 20000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) checkMidnight(); });
+    startNameRotation();
 
     window.addEventListener('resize', U.debounce(() => {
-      if (state.tab === 'home') renderRadar();
-      else if (state.tab === 'reports') Reports.render();
+      if (state.tab === 'reports') { Reports.render(); renderRadar(); }
       else if (state.tab === 'streak') Streaks.render();
       else if (state.tab === 'map') WorldMap.render();
     }, 150));
@@ -290,7 +356,6 @@ const App = (() => {
     else setTab('home');
     refresh();
     if (!Store.data.meta.onboarded) Onboard.start();
-    else Tour.start();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

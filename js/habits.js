@@ -37,7 +37,7 @@ const Habits = (() => {
         return `<button type="button" class="sub-pill${done ? ' done' : ''}" data-act="sub" data-sub="${s.id}"${editable ? '' : ' disabled'}><span class="sub-check">${done ? '\u2713' : ''}</span>${U.esc(s.title)}</button>`;
       }).join('')}</div>` : '';
     return `
-    <article class="habit-card" data-id="${h.id}">
+    <article class="habit-card" data-id="${h.id}" style="--p:${Math.round(ratio * 100)}%">
       <div class="icon-chip" style="background:${U.rgba(h.color, 0.14)}">${h.icon}</div>
       <div class="habit-main">
         <div class="habit-name-row">
@@ -47,7 +47,6 @@ const Habits = (() => {
         </div>
         <div class="habit-meta">
           <span class="habit-val">${I18N.num(U.fmtNum(val))} / ${I18N.num(U.fmtNum(h.target))} ${U.esc(unitLabel(h))}</span>
-          <span class="habit-bar"><span class="habit-bar-fill" style="width:${Math.round(ratio * 100)}%;background:${h.color}"></span></span>
         </div>
         ${subtasks}
       </div>

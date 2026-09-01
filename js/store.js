@@ -15,19 +15,57 @@
 const STORE_KEY = 'habittrack.v1';
 const UNITS = ['pages', 'times', 'minutes', 'hours', 'custom'];
 const DEFAULT_CATS = ['Spiritual', 'Mind', 'Body', 'Work', 'Discipline', 'Important', 'Priority'];
-const PALETTE = ['#58CC02', '#1CB0F6', '#5B5F6E'];
-// One-time remap of the v1 rainbow palette onto the 3-color system.
+// Telegram blue as primary, green as secondary, slate as the third color.
+const PALETTE = ['#229ED9', '#58CC02', '#5B5F6E'];
+// One-time remaps: v1 rainbow -> v2 3-color; v2 sky-blue -> v3 Telegram blue.
 const OLD_COLOR_MAP = { '#CE82FF': '#1CB0F6', '#FF9600': '#58CC02', '#FFC800': '#58CC02', '#FF86D0': '#1CB0F6', '#FF4B4B': '#5B5F6E' };
+const V3_COLOR_MAP = { '#1CB0F6': '#229ED9' };
 const ICONS = ['\u{1F4D6}', '\u{1F9D8}', '\u{1F4AA}', '\u{1F3C3}', '\u{1F4BB}', '\u270D\uFE0F', '\u{1F4A7}', '\u{1F305}', '\u{1F3AF}', '\u{1F4DA}', '\u{1F3B8}', '\u{1F9F9}', '\u{1F48A}', '\u{1F957}', '\u{1F634}', '\u{1F64F}'];
 
 const Store = (() => {
   let db = null;
+  // Undo/redo: a bounded history of full-state snapshots (one per persist).
+  let history = [], hPtr = -1, applyingHistory = false;
+  const HIST_MAX = 60;
   const nowIso = () => new Date().toISOString();
+
+  function recordState() {
+    if (applyingHistory) return;
+    history = history.slice(0, hPtr + 1);
+    history.push(JSON.stringify(db));
+    if (history.length > HIST_MAX) history.splice(0, history.length - HIST_MAX);
+    hPtr = history.length - 1;
+  }
+
+  function applyHistory() {
+    applyingHistory = true;
+    db = JSON.parse(history[hPtr]);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) { /* ignore */ }
+    applyingHistory = false;
+  }
+
+  function undo() {
+    if (hPtr <= 0) return false;
+    hPtr--;
+    applyHistory();
+    return true;
+  }
+
+  function redo() {
+    if (hPtr >= history.length - 1) return false;
+    hPtr++;
+    applyHistory();
+    return true;
+  }
+
+  const canUndo = () => hPtr > 0;
+  const canRedo = () => hPtr < history.length - 1;
 
   function persist() {
     db.updatedAt = nowIso();
     try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
     catch (e) { U.toast('Storage unavailable - changes may not persist'); }
+    recordState();
   }
 
   // Give pre-v4 tasks the new detail fields (doer/start/due/place/note),
@@ -66,10 +104,16 @@ const Store = (() => {
             db.habits.forEach((h) => { if (OLD_COLOR_MAP[h.color]) h.color = OLD_COLOR_MAP[h.color]; });
             db.meta.paletteV2 = true;
           }
+          if (!db.meta.paletteV3) {
+            db.habits.forEach((h) => { if (V3_COLOR_MAP[h.color]) h.color = V3_COLOR_MAP[h.color]; });
+            db.meta.paletteV3 = true;
+          }
         }
       }
     } catch (e) { db = null; }
     if (!db) seed();
+    history = [JSON.stringify(db)];
+    hPtr = 0;
   }
 
   function reset() {
@@ -85,23 +129,32 @@ const Store = (() => {
       habits: [], days: {}, periods: { weeks: {}, months: {} },
       profile: {},
       settings: { goalPct: 80, cascadeTasks: true, theme: 'light', lang: 'en', calendar: 'iran', categories: [] },
-      meta: { seeded: true, milestones: {}, paletteV2: true }
+      meta: { seeded: true, milestones: {}, paletteV2: true, paletteV3: true }
     };
     persist();
   }
 
-  function loadSample() { seed(); }
+  function loadSample() {
+    db = {
+      schemaVersion: 1, createdAt: nowIso(), updatedAt: null,
+      habits: [], days: {}, periods: { weeks: {}, months: {} },
+      profile: {},
+      settings: { goalPct: 80, cascadeTasks: true, theme: 'light', lang: 'en', calendar: 'iran', categories: [] },
+      meta: { seeded: true, milestones: {}, paletteV2: true, paletteV3: true }
+    };
+    seedSample();
+    persist();
+  }
 
+  // First run: a clean, empty app — no sample data.
   function seed() {
     db = {
       schemaVersion: 1, createdAt: nowIso(), updatedAt: null,
       habits: [], days: {}, periods: { weeks: {}, months: {} },
       profile: {},
       settings: { goalPct: 80, cascadeTasks: true, theme: 'light', lang: 'en', calendar: 'iran', categories: [] },
-      meta: { seeded: false, milestones: {} }
+      meta: { seeded: true, milestones: {}, paletteV2: true, paletteV3: true }
     };
-    seedSample();
-    db.meta.seeded = true;
     persist();
   }
 
@@ -408,8 +461,8 @@ const Store = (() => {
   /* ---------- seed: sample data so the UI is testable immediately ---------- */
   function seedSample() {
     const defs = [
-      { name: 'Reading', unit: 'pages', target: 20, icon: '\u{1F4D6}', color: '#1CB0F6', category: 'Mind', subtasks: [] },
-      { name: 'Deep Work', unit: 'hours', target: 4, icon: '\u{1F4BB}', color: '#1CB0F6', category: 'Work', subtasks: ['Plan tomorrow'] },
+      { name: 'Reading', unit: 'pages', target: 20, icon: '\u{1F4D6}', color: '#229ED9', category: 'Mind', subtasks: [] },
+      { name: 'Deep Work', unit: 'hours', target: 4, icon: '\u{1F4BB}', color: '#229ED9', category: 'Work', subtasks: ['Plan tomorrow'] },
       { name: 'Workout', unit: 'minutes', target: 45, icon: '\u{1F4AA}', color: '#58CC02', category: 'Body', subtasks: ['Stretch 5 min', '30 push-ups'] },
       { name: 'Meditate', unit: 'minutes', target: 10, icon: '\u{1F9D8}', color: '#58CC02', category: 'Spiritual', subtasks: [] },
       { name: 'Drink Water', unit: 'custom', customUnit: 'glasses', target: 8, icon: '\u{1F4A7}', color: '#58CC02', category: 'Body', subtasks: [] },
@@ -590,7 +643,7 @@ const Store = (() => {
 
   function importData(obj) {
     if (!obj || obj.schemaVersion !== 1 || !Array.isArray(obj.habits) || !obj.days || typeof obj.days !== 'object') {
-      throw new Error('Not a valid HabitTrack backup');
+      throw new Error('Not a valid Haabit backup');
     }
     db = {
       schemaVersion: 1,
@@ -618,6 +671,7 @@ const Store = (() => {
     getSetting, setSetting, goalPct, streakInfo, milestoneCheck, milestones, firstLoggedDay, habitStreak,
     restoreHabit, deleteHabitForever, importData, eraseAll, loadSample,
     getProfile, setProfile, categories, addCategory, markTourDone, markOnboarded,
+    undo, redo, canUndo, canRedo,
     get data() { return db; }
   };
 })();

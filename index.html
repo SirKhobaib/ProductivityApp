@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <meta name="theme-color" content="#F2F3F7" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="HabitTrack" />
-<title>HabitTrack</title>
+<meta name="apple-mobile-web-app-title" content="Haabit" />
+<title>Haabit</title>
 <link rel="stylesheet" href="css/styles.css" />
 <script>
   // Visible error trap — helps when debugging from file://
@@ -86,6 +86,7 @@
       <div id="motherGrid">
         <div id="motherHabits">
           <div id="habitList"></div>
+          <button class="btn ghost wide" id="habitAddBtn" type="button" data-i18n="newHabit">New habit</button>
         </div>
 
         <div id="motherTasks">
@@ -111,14 +112,7 @@
       </div>
     </section>
 
-    <!-- Radar / balance -->
-    <section class="card radar-card">
-      <div class="section-head">
-        <h2 data-i18n="balance">Balance</h2>
-        <span class="radar-mode" id="radarMode"></span>
-      </div>
-      <canvas id="radarCanvas"></canvas>
-    </section>
+    <!-- Radar / balance moved to the Reports tab -->
   </main>
   <!-- ============ PLACEHOLDER SCREENS ============ -->
   <main class="screen" id="screen-map">
@@ -131,6 +125,13 @@
 
   <main class="screen" id="screen-reports">
     <header class="page-head"><h1 data-i18n="reports">Reports</h1></header>
+    <section class="card radar-card">
+      <div class="section-head">
+        <h2 data-i18n="balance">Balance</h2>
+        <span class="radar-mode" id="radarMode"></span>
+      </div>
+      <canvas id="radarCanvas"></canvas>
+    </section>
     <div class="seg range-seg" id="reportRange">
       <button class="active" data-range="week" data-i18n="week" type="button">Week</button>
       <button data-range="month" data-i18n="month" type="button">Month</button>
@@ -142,7 +143,7 @@
       <canvas id="reportBars"></canvas>
     </section>
     <section class="card panel">
-      <h2 data-i18n="habits">Habits</h2>
+      <h2 data-i18n="advancedReports">Advanced Reports</h2>
       <div class="cat-chips" id="reportCats"></div>
       <div id="reportHabits"></div>
     </section>
@@ -224,7 +225,6 @@
         <div id="dataStats" class="data-stats"></div>
         <button class="btn danger wide" id="eraseAllBtn" type="button">Erase all data</button>
         <button class="btn ghost wide" id="loadSampleBtn" type="button">Load sample data</button>
-        <button class="btn ghost wide" id="replayTourBtn" type="button">Replay the tour</button>
       </section>
     </div>
 
@@ -242,6 +242,10 @@
         <div class="field">
           <label for="pfName" data-i18n="fieldName">Name</label>
           <input id="pfName" type="text" maxlength="60" />
+        </div>
+        <div class="field">
+          <label for="pfTitle" data-i18n="fieldTitle">Title</label>
+          <input id="pfTitle" type="text" maxlength="40" data-i18n-ph="phTitle" />
         </div>
         <div class="field">
           <label for="pfUsername" data-i18n="fieldUsername">Username</label>
@@ -331,6 +335,8 @@
   <div class="err-trap" id="errTrap" hidden></div>
 </div>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="js/telegram.js"></script>
 <script src="js/util.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/jalali.js"></script>

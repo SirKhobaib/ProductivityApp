@@ -1,6 +1,6 @@
 'use strict';
 
-/* HabitTrack landing page — the map itself is the pitch.
+/* Haabit landing page — the map itself is the pitch.
    Reuses app assets: WorldMap.ISLANDS / SCENES, Streaks.FLAME_SVG,
    I18N strings + Persian digits, Jalali conversion, U helpers.
    No Store here on purpose: a marketing page must not touch localStorage. */
@@ -10,7 +10,7 @@ const Landing = (() => {
   const AXES = ['Spiritual', 'Mind', 'Body', 'Work', 'Discipline'];
   const START = [40, 60, 30, 70, 50];
   const FOG_RGB = [228, 230, 238];
-  const GREEN_RGB = [88, 204, 2];
+  const ACCENT_RGB = [34, 158, 217]; // Telegram blue — the pentagon fills toward this
   const FONT = "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif";
 
   let lang = 'en';
@@ -154,7 +154,7 @@ const Landing = (() => {
 
     // fill shifts fog grey -> green as the overall average rises
     const avg = values.reduce((a, b) => a + b, 0) / (n * 100);
-    const mix = (k) => Math.round(FOG_RGB[k] + (GREEN_RGB[k] - FOG_RGB[k]) * avg);
+    const mix = (k) => Math.round(FOG_RGB[k] + (ACCENT_RGB[k] - FOG_RGB[k]) * avg);
     const col = mix(0) + ',' + mix(1) + ',' + mix(2);
 
     ctx.beginPath();
@@ -254,6 +254,8 @@ const Landing = (() => {
     });
     document.getElementById('langToggle').setAttribute('aria-label', T('landingLang'));
     document.getElementById('flameNum').textContent = I18N.num(flame);
+    // Hand the chosen language to the app through the CTA link + localStorage.
+    document.getElementById('ctaBtn').href = 'index.html?lang=' + lang;
     updateIslandTexts();
     buildSliders();
     drawRadar();
@@ -289,6 +291,10 @@ const Landing = (() => {
     updateDateChip();
     initFog();
     document.getElementById('langToggle').addEventListener('click', toggleLang);
+    // Remember the landing language so index.html opens onboarding in it.
+    document.getElementById('ctaBtn').addEventListener('click', () => {
+      try { localStorage.setItem('habittrack.landingLang', lang); } catch (err) { /* file:// */ }
+    });
     window.addEventListener('resize', U.debounce(() => drawRadar(), 150));
     // if the page loads already scrolled (e.g. refresh mid-page), re-run the scrub
     window.addEventListener('load', () => { if (!isMobile()) window.dispatchEvent(new Event('scroll')); });

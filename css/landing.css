@@ -1,20 +1,20 @@
 /* ==========================================================================
-   HabitTrack — landing page ("fog of war" map, radar toy, flame counter)
+   Haabit — landing page ("fog of war" map, radar toy, flame counter)
    NOTE: the :root tokens mirror css/styles.css and js/store.js PALETTE —
    keep them in sync with the app, do not invent new brand colors.
    ========================================================================== */
 
 :root {
-  --green: #58CC02;
-  --green-dark: #3E9A01;
-  --blue: #1CB0F6;
+  --green: #229ED9;    /* Telegram blue (official) — primary */
+  --green-dark: #1B7FA8;
+  --blue: #58CC02;     /* green becomes the secondary accent */
   --slate: #5B5F6E;
   --ink: #22242E;
   --sky: #EAF6FF;
   --paper: #FAFBFC;
   --fog: #E4E6EE;
   --card: #FFFFFF;
-  --accent: #58CC02; /* consumed by U.progressColor() in the radar toy */
+  --accent: #229ED9; /* consumed by U.progressColor() in the radar toy */
   --radius: 18px;
   --shadow-card: 0 1px 2px rgba(18, 22, 33, 0.05), 0 4px 14px rgba(18, 22, 33, 0.05);
   --ease: cubic-bezier(.25, .72, .3, 1);
@@ -40,7 +40,7 @@ button { font: inherit; border: none; background: none; cursor: pointer; color: 
 a { color: inherit; text-decoration: none; }
 svg { display: block; }
 
-:focus-visible { outline: 3px solid rgba(28, 176, 246, 0.55); outline-offset: 2px; border-radius: 8px; }
+:focus-visible { outline: 3px solid rgba(34, 158, 217, 0.55); outline-offset: 2px; border-radius: 8px; }
 
 /* ---------- top bar: wordmark + language toggle ---------- */
 .topbar {
@@ -161,8 +161,8 @@ main { transition: opacity .22s var(--ease), transform .22s var(--ease); }
 .cta-island { width: min(260px, 70vw); }
 .cta-island .island { border: 2px solid var(--green); animation: glow 2.8s ease-in-out infinite; }
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 204, 2, 0); }
-  50% { box-shadow: 0 0 30px 5px rgba(88, 204, 2, 0.3); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 158, 217, 0); }
+  50% { box-shadow: 0 0 30px 5px rgba(34, 158, 217, 0.3); }
 }
 /* button mirrors the app's .btn / .btn.primary declarations verbatim */
 .btn {

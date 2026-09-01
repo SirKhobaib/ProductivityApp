@@ -58,7 +58,7 @@ const Tasks = (() => {
     const cat = cascaded && it.cat
       ? `<span class="task-cat">${U.esc(I18N.cat(it.cat))}</span>` : '';
     return `
-      <li class="task-item${it.done ? ' done' : ''}${cascaded ? ' ghost' : ''}" data-kind="${kind}" data-pkey="${pkey}" data-id="${it.id}">
+      <li class="task-item${it.done ? ' done' : ''}${cascaded ? ' ghost' : ''}" data-kind="${kind}" data-pkey="${pkey}" data-id="${it.id}" style="--p:${it.done ? 100 : 0}%">
         <button type="button" class="check${it.done ? ' on' : ''}" data-act="toggle" aria-label="Toggle complete"${ed ? '' : ' disabled'}><span>${it.done ? '\u2713' : ''}</span></button>
         <span class="task-num">${I18N.num(pad2(idx + 1))}</span>
         <span class="task-main">
@@ -162,7 +162,7 @@ const Tasks = (() => {
     };
     row.li.classList.add('dragging');
     if (row.li.setPointerCapture) { try { row.li.setPointerCapture(e.pointerId); } catch (err) { /* ok */ } }
-    if (navigator.vibrate) { try { navigator.vibrate(10); } catch (err) { /* unsupported */ } }
+    TG.haptic('light');
     document.body.classList.add('task-dragging');
   }
 
@@ -255,7 +255,7 @@ const Tasks = (() => {
       if (Date.now() - dragJustEnded < 350) return; // ignore the click a drag release can leave behind
       if (btn && !btn.disabled) {
         const act = btn.dataset.act;
-        if (act === 'toggle') { Store.toggleTask(row.kind, row.key, row.id); App.refresh(); }
+        if (act === 'toggle') { Store.toggleTask(row.kind, row.key, row.id); TG.haptic('light'); App.refresh(); }
         else if (act === 'del') { Store.deleteTask(row.kind, row.key, row.id); App.refresh(); }
         else if (act === 'edit') openEdit(row);
         return;

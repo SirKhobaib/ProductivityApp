@@ -412,7 +412,9 @@ const Sheets = (() => {
           <button type="button" class="btn ghost sq" id="tsDown" aria-label="${T('moveDown')}">\u2193</button>` : ''}
           <button type="button" class="btn primary" id="tsAdd">${editing ? T('saveChanges') : T('addTaskBtn')}</button>
         </div>`;
-      el.querySelector('#tsScope').addEventListener('click', (ev) => {
+      // Scope picker only renders in create mode — guard for edit mode.
+      const scopeSeg = el.querySelector('#tsScope');
+      if (scopeSeg) scopeSeg.addEventListener('click', (ev) => {
         const b = ev.target.closest('button[data-scope]');
         if (!b) return;
         scope = b.dataset.scope;

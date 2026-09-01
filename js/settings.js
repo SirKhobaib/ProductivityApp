@@ -28,7 +28,6 @@ const SettingsPage = (() => {
   function renderStaticLabels() {
     document.getElementById('eraseAllBtn').textContent = T('eraseAll');
     document.getElementById('loadSampleBtn').textContent = T('loadSample');
-    document.getElementById('replayTourBtn').textContent = T('replayTour');
     document.getElementById('backupCopyBtn').textContent = T('copyAllBtn');
     document.getElementById('restoreApplyBtn').textContent = T('restoreJson');
     document.getElementById('restoreFindBtn').textContent = T('findBtn');
@@ -127,6 +126,7 @@ const SettingsPage = (() => {
   function renderProfile() {
     const p = Store.getProfile();
     document.getElementById('pfName').value = p.name || '';
+    document.getElementById('pfTitle').value = p.title || '';
     document.getElementById('pfUsername').value = p.username || '';
     document.getElementById('pfBio').value = p.bio || '';
     const img = document.getElementById('pfAvatarImg');
@@ -241,15 +241,12 @@ const SettingsPage = (() => {
     document.getElementById('restoreApplyBtn').addEventListener('click', applyRestore);
     document.getElementById('eraseAllBtn').addEventListener('click', eraseAll);
     document.getElementById('loadSampleBtn').addEventListener('click', loadSample);
-    document.getElementById('replayTourBtn').addEventListener('click', () => {
-      App.setTab('home');
-      Tour.replay();
-    });
 
     // profile
     document.getElementById('pfSave').addEventListener('click', () => {
       Store.setProfile({
         name: document.getElementById('pfName').value.trim(),
+        title: document.getElementById('pfTitle').value.trim(),
         username: document.getElementById('pfUsername').value.trim(),
         bio: document.getElementById('pfBio').value.trim()
       });
