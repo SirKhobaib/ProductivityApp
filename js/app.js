@@ -29,6 +29,9 @@ const App = (() => {
     document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
       el.setAttribute('placeholder', T(el.getAttribute('data-i18n-ph')));
     });
+    // Keep the pinned tab title in the active language.
+    const headTitle = document.getElementById('headTitle');
+    if (headTitle && !headTitle.hidden) headTitle.textContent = T(document.body.dataset.tab || 'home');
   }
 
   function initialsOf(name) {
@@ -84,6 +87,14 @@ const App = (() => {
     document.body.dataset.tab = t;
     document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + t));
     document.querySelectorAll('.tabbar .tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
+    // Shared header: date/calendar row is Home-only; other tabs show their name.
+    const datebar = document.getElementById('headerDatebar');
+    if (datebar) datebar.hidden = (t !== 'home');
+    const headTitle = document.getElementById('headTitle');
+    if (headTitle) {
+      headTitle.hidden = (t === 'home');
+      if (t !== 'home') headTitle.textContent = T(t);
+    }
     TG.backButton(t !== 'home');
     if (t === 'reports') { Reports.render(); renderRadar(); }
     else if (t === 'streak') Streaks.render();
@@ -235,6 +246,7 @@ const App = (() => {
       // Streak milestones (7/30/100/365) — one-time celebration each.
       const m = Store.milestoneCheck();
       if (m) {
+        TG.notify('success');
         confettiBurst();
         setTimeout(() => U.toast(T('milestoneToast', { n: m })), 700);
       }

@@ -159,15 +159,9 @@ const SettingsPage = (() => {
   }
 
   let armedRestore = false;
-  function applyRestore() {
+  function doRestore() {
     const btn = document.getElementById('restoreApplyBtn');
     const ta = document.getElementById('restoreData');
-    if (!armedRestore) {
-      armedRestore = true;
-      btn.textContent = T('confirmRestore');
-      setTimeout(() => { armedRestore = false; btn.textContent = T('restoreJson'); }, 4000);
-      return;
-    }
     try {
       Store.importData(JSON.parse(ta.value));
       armedRestore = false;
@@ -178,6 +172,20 @@ const SettingsPage = (() => {
     } catch (err) {
       U.toast(T('invalidBackup'));
     }
+  }
+  function applyRestore() {
+    const btn = document.getElementById('restoreApplyBtn');
+    // Telegram: native confirm dialog (reuses the existing confirmRestore copy).
+    if (TG.confirm(T('confirmRestore'), doRestore)) return;
+    // Fallback: the existing two-tap arm.
+    const ta = document.getElementById('restoreData');
+    if (!armedRestore) {
+      armedRestore = true;
+      btn.textContent = T('confirmRestore');
+      setTimeout(() => { armedRestore = false; btn.textContent = T('restoreJson'); }, 4000);
+      return;
+    }
+    doRestore();
   }
 
   function renderDataStats() {
@@ -192,19 +200,26 @@ const SettingsPage = (() => {
   }
 
   let armedErase = false;
+  function doErase() {
+    armedErase = false;
+    const btn = document.getElementById('eraseAllBtn');
+    btn.textContent = T('eraseAll');
+    Store.eraseAll();
+    render(); App.refresh();
+    U.toast(T('allErased'));
+  }
   function eraseAll() {
     const btn = document.getElementById('eraseAllBtn');
+    // Telegram: native confirm dialog (reuses the existing confirmErase copy).
+    if (TG.confirm(T('confirmErase'), doErase)) return;
+    // Fallback: the existing two-tap arm.
     if (!armedErase) {
       armedErase = true;
       btn.textContent = T('confirmErase');
       setTimeout(() => { armedErase = false; btn.textContent = T('eraseAll'); }, 4000);
       return;
     }
-    armedErase = false;
-    btn.textContent = T('eraseAll');
-    Store.eraseAll();
-    render(); App.refresh();
-    U.toast(T('allErased'));
+    doErase();
   }
 
   function loadSample() {
@@ -214,7 +229,6 @@ const SettingsPage = (() => {
   }
 
   function init() {
-    document.getElementById('settingsBack').addEventListener('click', () => App.setTab('home'));
     document.getElementById('settingsTabs').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-stab]');
       if (b) showTab(b.dataset.stab);
@@ -243,14 +257,31 @@ const SettingsPage = (() => {
     document.getElementById('loadSampleBtn').addEventListener('click', loadSample);
 
     // profile
-    document.getElementById('pfSave').addEventListener('click', () => {
+    document.getElementById('pfSave').addEventListener('click', async () => {
+      // Usernames are cloud keys: normalized (trimmed, lowercase) everywhere.
+      const username = Cloud.norm(document.getElementById('pfUsername').value);
+      // 1) If this username already exists in the cloud, its data takes over
+      //    this device (localStorage is re-persisted by importData), then the
+      //    whole app re-renders through the existing entry point.
+      if (username) {
+        const row = await Cloud.fetchRow(username);
+        if (row && row.data) {
+          try {
+            Store.importData(JSON.parse(JSON.stringify(row.data)));
+            App.refresh();
+          } catch (e) { console.warn('Cloud restore skipped:', e); }
+        }
+      }
+      // 2) The identity fields the user just typed always win locally.
       Store.setProfile({
         name: document.getElementById('pfName').value.trim(),
         title: document.getElementById('pfTitle').value.trim(),
-        username: document.getElementById('pfUsername').value.trim(),
+        username: username,
         bio: document.getElementById('pfBio').value.trim()
       });
       renderProfile(); App.renderHeader(); U.toast(T('profileSaved'));
+      // 3) Either way, this device's state becomes/stays that username's data.
+      if (username) Cloud.push(username, Store.data);
     });
     document.getElementById('pfColors').addEventListener('click', (e) => {
       const b = e.target.closest('.pick-color');

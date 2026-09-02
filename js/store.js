@@ -42,6 +42,7 @@ const Store = (() => {
     db = JSON.parse(history[hPtr]);
     try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); } catch (e) { /* ignore */ }
     applyingHistory = false;
+    syncCloud();
   }
 
   function undo() {
@@ -61,11 +62,20 @@ const Store = (() => {
   const canUndo = () => hPtr > 0;
   const canRedo = () => hPtr < history.length - 1;
 
+  function syncCloud() {
+    // Fire-and-forget cloud mirror: only when a username is set. Never blocks
+    // or fails the local save — offline just means the push is skipped/lost.
+    if (typeof window === 'undefined' || !window.Cloud) return; // Node test harness / CDN down
+    const u = (db.profile && db.profile.username) ? String(db.profile.username).trim().toLowerCase() : '';
+    if (u) { try { Cloud.push(u, db); } catch (e) { /* silent */ } }
+  }
+
   function persist() {
     db.updatedAt = nowIso();
     try { localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
     catch (e) { U.toast('Storage unavailable - changes may not persist'); }
     recordState();
+    syncCloud();
   }
 
   // Give pre-v4 tasks the new detail fields (doer/start/due/place/note),

@@ -31,11 +31,9 @@
 <body data-tab="home">
 <div class="app">
 
-  <!-- ================= HOME ================= -->
-  <main class="screen active" id="screen-home">
-
-    <!-- Header: profile row + date row -->
-    <header>
+  <!-- Shared pinned header: profile row everywhere; date row on Home only;
+       the active tab's name shows on the other tabs. -->
+  <header id="appHeader">
       <div class="card profile-bar">
         <button class="profile-id" id="profileBtn" type="button" aria-label="Profile">
           <span class="avatar" id="avatarBox"><img id="avatarImg" hidden alt="" /><span id="avatarInitials">?</span></span>
@@ -45,7 +43,7 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.08a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.03z"/></svg>
         </button>
       </div>
-      <div class="card datebar" aria-label="Date selector">
+      <div class="card datebar" id="headerDatebar" aria-label="Date selector" hidden>
         <button class="icon-btn" id="datePrev" type="button" aria-label="Previous day">
           <svg class="chev" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
@@ -57,7 +55,11 @@
           <svg class="chev" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       </div>
-    </header>
+    <h1 class="head-title" id="headTitle" hidden></h1>
+  </header>
+
+  <!-- ================= HOME ================= -->
+  <main class="screen active" id="screen-home">
 
     <!-- Progress: just the bar + percentage -->
     <section class="card progress-card" aria-label="Daily progress">
@@ -116,15 +118,11 @@
   </main>
   <!-- ============ PLACEHOLDER SCREENS ============ -->
   <main class="screen" id="screen-map">
-    <header class="page-head">
-      <h1 data-i18n="map">Map</h1>
-      <p class="page-sub" data-i18n="mapSub">Your world unlocks as your streak grows</p>
-    </header>
+    <p class="page-sub" data-i18n="mapSub">Your world unlocks as your streak grows</p>
     <div class="world" id="worldPath"></div>
   </main>
 
   <main class="screen" id="screen-reports">
-    <header class="page-head"><h1 data-i18n="reports">Reports</h1></header>
     <section class="card radar-card">
       <div class="section-head">
         <h2 data-i18n="balance">Balance</h2>
@@ -150,7 +148,6 @@
   </main>
 
   <main class="screen" id="screen-streak">
-    <header class="page-head"><h1 data-i18n="streak">Streak</h1></header>
     <section class="card streak-hero" id="streakHero"></section>
     <section class="card panel">
       <h2 data-i18n="last13">Last 13 weeks</h2>
@@ -164,12 +161,6 @@
   </main>
 
   <main class="screen" id="screen-settings">
-    <header class="page-head with-back">
-      <button class="icon-btn" id="settingsBack" type="button" aria-label="Back">
-        <svg class="chev" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <h1 data-i18n="settings">Settings</h1>
-    </header>
 
     <div class="seg set-tabs" id="settingsTabs" role="tablist">
       <button class="active" data-stab="general" data-i18n="generalTab" type="button">General</button>
@@ -338,6 +329,8 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="js/telegram.js"></script>
 <script src="js/util.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/cloud.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/jalali.js"></script>
 <script src="js/store.js"></script>

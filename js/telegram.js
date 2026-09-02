@@ -40,6 +40,17 @@ const TG = (() => {
     }
   }
 
+  // A distinct buzz pattern: WebApp.HapticFeedback.notificationOccurred
+  // ('success' | 'error' | 'warning') — different from impactOccurred.
+  function notify(kind) {
+    const t = wa();
+    if (t && t.HapticFeedback && t.HapticFeedback.notificationOccurred) {
+      try { t.HapticFeedback.notificationOccurred(kind || 'success'); } catch (e) { /* ignore */ }
+    } else if (navigator.vibrate) {
+      try { navigator.vibrate([30, 40, 60]); } catch (e) { /* unsupported */ }
+    }
+  }
+
   function backButton(show) {
     const t = wa();
     if (!t || !t.BackButton) return;
@@ -55,5 +66,42 @@ const TG = (() => {
 
   function colorScheme() { return scheme; }
 
-  return { init, userName, haptic, backButton, onBackClick, colorScheme };
+  // Telegram's native MainButton for a sheet's primary action. Only one
+  // handler at a time: offClick the previous before registering a new one.
+  let mainBtnHandler = null;
+
+  function setMainButton(text, onClick) {
+    const t = wa();
+    if (!t || !t.MainButton) return false;
+    try {
+      if (mainBtnHandler) t.MainButton.offClick(mainBtnHandler);
+      mainBtnHandler = onClick;
+      t.MainButton.setText(text);
+      t.MainButton.onClick(onClick);
+      t.MainButton.show();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function hideMainButton() {
+    const t = wa();
+    if (!t || !t.MainButton) return;
+    try {
+      if (mainBtnHandler) { t.MainButton.offClick(mainBtnHandler); mainBtnHandler = null; }
+      t.MainButton.hide();
+    } catch (e) { /* ignore */ }
+  }
+
+  // Native confirm dialog (WebApp.showConfirm). Returns false — and does
+  // nothing — outside Telegram, so callers fall back to their in-page pattern.
+  function confirm(message, onOk) {
+    const t = wa();
+    if (!t || !t.showConfirm) return false;
+    try {
+      t.showConfirm(message, (ok) => { if (ok) onOk(); });
+      return true;
+    } catch (e) { return false; }
+  }
+
+  return { init, userName, haptic, notify, setMainButton, hideMainButton, confirm, backButton, onBackClick, colorScheme };
 })();

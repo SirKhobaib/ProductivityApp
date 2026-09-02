@@ -58,8 +58,29 @@ button {
 .app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 12px 14px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
+  padding: 0 14px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 28px);
 }
+
+/* Shared pinned header: profile row everywhere; date row on Home only;
+   the active tab's name on the other tabs.
+   (#appHeader is a direct child of .app — one header for all tabs.) */
+#appHeader {
+  position: sticky;
+  top: 0;
+  z-index: 40; /* under tabbar (55), fab (50), sheets (60) */
+  margin-inline: -14px;                    /* full-bleed backdrop, matches .app side padding */
+  padding: env(safe-area-inset-top) 14px 10px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+/* .datebar sets display:flex, which would beat the UA's [hidden] rule. */
+.datebar[hidden] { display: none; }
+.head-title {
+  font-size: 24px; font-weight: 800; letter-spacing: -0.02em;
+  margin: 0; padding: 6px 4px 0;
+}
+.head-title[hidden] { display: none; }
 
 .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-card); }
 
@@ -728,7 +749,18 @@ body[data-theme="dark"] .tabbar {
 .avatar.big span { font-size: 22px; }
 .profile-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .profile-top-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.profile-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-name {
+  font-size: 15px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: inline-block;
+}
+/* The 15s name ⇄ title ⇄ Haabit swap (and taps) flip the name like a card. */
+@keyframes nameTwist {
+  0% { transform: rotateX(0deg); opacity: 1; }
+  50% { transform: rotateX(90deg); opacity: .15; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+.profile-name.twist { animation: nameTwist .5s var(--ease); }
 header .datebar { margin-bottom: 12px; }
 
 /* ---------- minimal progress: bar + % ---------- */
@@ -1059,6 +1091,7 @@ body[data-mother="tasks"] #motherHabits { display: none; }
 /* ---- Desktop: two-column home (habits | tasks), wider reports ---- */
 @media (min-width: 1020px) {
   .app { max-width: 1120px; padding-inline: 24px; }
+  #appHeader { margin-inline: -24px; padding-inline: 24px; }
 
   #motherTabs { display: none; }
   #motherTasks,
@@ -1070,7 +1103,7 @@ body[data-mother="tasks"] #motherHabits { display: none; }
     gap: 18px;
     align-items: start;
   }
-  #motherHabits { position: sticky; top: 12px; }
+  #motherHabits { position: sticky; top: 148px; } /* below the pinned header */
 
   .page-head, .range-seg, .stat-hero, .screen-reports-max { max-width: 900px; margin-left: auto; margin-right: auto; }
   #screen-reports .seg, #screen-reports .page-head { max-width: 900px; margin-inline: auto; }

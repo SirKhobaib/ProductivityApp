@@ -79,7 +79,13 @@ const Habits = (() => {
     const step = STEPS[h.unit] || 1;
     const e = Store.entryFor(App.viewKey(), id);
     const cur = e ? (e.v || 0) : 0;
+    const before = Store.habitRatio(h, e);
     Store.setHabitValue(App.viewKey(), id, cur + dir * step);
+    TG.haptic('light');
+    // The moment the daily target is crossed gets a stronger buzz.
+    if (before < 0.999 && Store.habitRatio(h, Store.entryFor(App.viewKey(), id)) >= 0.999) {
+      TG.haptic('medium');
+    }
     App.refresh();
   }
 

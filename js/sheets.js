@@ -24,8 +24,17 @@ const Sheets = (() => {
 
   function close() {
     if (root.hidden) return;
+    TG.hideMainButton();
     root.classList.remove('open');
     setTimeout(() => { root.hidden = true; bodyEl.innerHTML = ''; }, 250);
+  }
+
+  // Telegram: promote the sheet's primary save to the native MainButton and
+  // hide the in-page duplicate. No-op outside Telegram (the button stays).
+  function setMainSave(text, fn) {
+    if (!TG.setMainButton(text, fn)) return;
+    const btn = bodyEl.querySelector('.sheet-actions .btn.primary');
+    if (btn) btn.hidden = true;
   }
 
   function mkBtn(text, cls, label) {
@@ -308,7 +317,7 @@ const Sheets = (() => {
     });
     drawSubs();
 
-    el.querySelector('#hfSave').addEventListener('click', () => {
+    const save = () => {
       const name = nameEl.value.trim();
       const target = parseFloat(targetEl.value);
       if (!name) { nameEl.classList.add('invalid'); nameEl.focus(); U.toast(T('needName')); return; }
@@ -335,7 +344,10 @@ const Sheets = (() => {
       if (editing) { Store.updateHabit(h.id, patch); U.toast(T('habitUpdated')); }
       else { Store.addHabit(patch); U.toast(T('habitAdded')); }
       close(); App.refresh();
-    });
+    };
+    el.querySelector('#hfSave').addEventListener('click', save);
+    // Telegram: the native MainButton runs the exact same save function.
+    setMainSave(editing ? T('saveChanges') : T('createHabit'), save);
 
     // Two-tap confirm for archiving (soft delete) — history is preserved.
     const del = el.querySelector('#hfDelete');
@@ -472,6 +484,8 @@ const Sheets = (() => {
       };
       el.querySelector('#tsAdd').addEventListener('click', save);
       el.querySelector('#tsTitle').addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+      // Telegram: the native MainButton runs the exact same save function.
+      setMainSave(editing ? T('saveChanges') : T('addTaskBtn'), save);
     });
   }
 
