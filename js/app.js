@@ -256,6 +256,7 @@ const App = (() => {
   /* ---------- boot ---------- */
   function init() {
     Store.load();
+    Cloud.init();
     TG.init();
     // Inside Telegram, follow Telegram's own light/dark scheme.
     if (TG.colorScheme() === 'dark') Store.setSetting('theme', 'dark');
@@ -367,6 +368,8 @@ const App = (() => {
     else if (['map', 'reports', 'streak', 'settings'].indexOf(hash) >= 0) setTab(hash);
     else setTab('home');
     refresh();
+    // Cloud sync on boot: converge this device with the username's cloud data.
+    if (Store.getProfile().username) Cloud.sync();
     if (!Store.data.meta.onboarded) Onboard.start();
   }
 

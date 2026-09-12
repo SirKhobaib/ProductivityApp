@@ -37,5 +37,29 @@ const Cloud = (() => {
     } catch (e) { console.warn('Cloud push failed:', e); }
   }
 
-  return { init, norm, fetchRow, push };
+  // Boot-time last-write-wins, keyed by the saved username:
+  //   no cloud row      -> push local state (first time this device is seen)
+  //   cloud is newer    -> pull (adopt the cloud state wholesale)
+  //   local is newer    -> push (this device has the latest changes)
+  // Both sides carry an ISO `updatedAt` stamp, so the comparison is a plain
+  // string compare. Called fire-and-forget from app boot; never blocks it.
+  async function sync() {
+    const username = norm((window.Store && Store.getProfile) ? Store.getProfile().username : '');
+    if (!client || !username) return;
+    const row = await fetchRow(username);
+    const local = Store.data;
+    if (!row || !row.data) { push(username, local); return; }
+    const cloudTs = String(row.data.updatedAt || '');
+    const localTs = String(local.updatedAt || '');
+    if (cloudTs > localTs) {
+      try {
+        Store.importData(JSON.parse(JSON.stringify(row.data)));
+        if (window.App && App.refresh) App.refresh();
+      } catch (e) { console.warn('Cloud sync pull skipped:', e); }
+    } else if (localTs > cloudTs) {
+      push(username, local);
+    }
+  }
+
+  return { init, norm, fetchRow, push, sync };
 })();

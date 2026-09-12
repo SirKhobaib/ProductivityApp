@@ -261,24 +261,29 @@ const SettingsPage = (() => {
       // Usernames are cloud keys: normalized (trimmed, lowercase) everywhere.
       const username = Cloud.norm(document.getElementById('pfUsername').value);
       // 1) If this username already exists in the cloud, its data takes over
-      //    this device (localStorage is re-persisted by importData), then the
-      //    whole app re-renders through the existing entry point.
+      //    this device — including its identity (name/title/bio/photo).
+      let adopted = false;
       if (username) {
         const row = await Cloud.fetchRow(username);
         if (row && row.data) {
           try {
             Store.importData(JSON.parse(JSON.stringify(row.data)));
+            // Keep the cloud profile's identity; only re-assert the username.
+            Store.setProfile({ username: username });
             App.refresh();
+            adopted = true;
           } catch (e) { console.warn('Cloud restore skipped:', e); }
         }
       }
-      // 2) The identity fields the user just typed always win locally.
-      Store.setProfile({
-        name: document.getElementById('pfName').value.trim(),
-        title: document.getElementById('pfTitle').value.trim(),
-        username: username,
-        bio: document.getElementById('pfBio').value.trim()
-      });
+      // 2) New account (no cloud row): the identity fields typed here apply.
+      if (!adopted) {
+        Store.setProfile({
+          name: document.getElementById('pfName').value.trim(),
+          title: document.getElementById('pfTitle').value.trim(),
+          username: username,
+          bio: document.getElementById('pfBio').value.trim()
+        });
+      }
       renderProfile(); App.renderHeader(); U.toast(T('profileSaved'));
       // 3) Either way, this device's state becomes/stays that username's data.
       if (username) Cloud.push(username, Store.data);
